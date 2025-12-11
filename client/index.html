@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stone Paper Scissors - Multiplayer Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗿</text></svg>">
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      
+      :root {
+        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        --bg: #0f1222;
+        --bg-accent: linear-gradient(135deg, #0f1222 0%, #1b1f3b 100%);
+        --surface: #151838;
+        --surface-2: #1c2047;
+        --text-primary: #e6e9ff;
+        --text-secondary: #a8afcf;
+        --primary: #7c88ff;
+        --primary-700: #6570ff;
+        --success: #3ddc97;
+        --warning: #f6c049;
+        --danger: #ff6b6b;
+        --muted: #2a2f5a;
+        --ring: rgba(124, 136, 255, 0.35);
+        --shadow-1: 0 10px 30px rgba(0,0,0,0.35);
+        --radius-lg: 18px;
+        --radius-md: 12px;
+      }
+
+      [data-theme="light"] {
+        --bg: #f7f8fd;
+        --bg-accent: linear-gradient(135deg, #f7f8fd 0%, #eef1fb 100%);
+        --surface: #ffffff;
+        --surface-2: #f2f4fb;
+        --text-primary: #1b1f3b;
+        --text-secondary: #4b5279;
+        --primary: #4f5dff;
+        --primary-700: #3d49ff;
+        --success: #21c97a;
+        --warning: #e5a52f;
+        --danger: #e34b4b;
+        --muted: #e8eaf7;
+        --ring: rgba(79, 93, 255, 0.35);
+        --shadow-1: 0 10px 25px rgba(0,0,0,0.08);
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: var(--font-sans);
+        background: var(--bg-accent);
+        color: var(--text-primary);
+      }
+    </style>
+</head>
+<body>
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

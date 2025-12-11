@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stone Paper Scissors - Test</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        .avatar-selector {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+            max-width: 600px;
+        }
+        .avatar-btn {
+            font-size: 32px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .avatar-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        .avatar-btn.selected {
+            border-color: #FFD700;
+            background: rgba(255, 215, 0, 0.3);
+        }
+        .stats-panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .history-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+            color: white;
+        }
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .choice-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .choice-btn {
+            background: #2196F3;
+            padding: 20px;
+            font-size: 24px;
+            border-radius: 15px;
+            min-width: 80px;
+        }
+        .choice-btn:hover {
+            background: #1976D2;
+        }
+        .status {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .players {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .player-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            flex: 1;
+            margin: 0 10px;
+        }
+        .score {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        h2 {
+            text-align: center;
+            margin: 20px 0;
+        }
+        #log {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗿📄✂️ Stone Paper Scissors</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('game')">Game</button>
+            <button class="tab-btn" onclick="showTab('profile')">Profile & Stats</button>
+        </div>
+
+        <div id="gameTab" class="tab-content active">
+            <div class="status" id="status">
+                Disconnected from server
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h3>Select Your Avatar:</h3>
+                <div id="avatarSelector" class="avatar-selector">
+                    <!-- Avatars will be loaded here -->
+                </div>
+                <div style="text-align: center; margin: 10px 0;">
+                    Selected: <span id="selectedAvatar" style="font-size: 48px;">🎮</span>
+                </div>
+            </div>
+
+            <div class="game-controls">
+                <input type="text" id="playerName" placeholder="Enter your name" style="padding: 15px; border-radius: 10px; border: none; margin-right: 10px;">
+                <button onclick="joinLobby()">Join Lobby</button>
+                <button onclick="createGame()">Create Game</button>
+                <button onclick="quickJoin()">Quick Join</button>
+                <button onclick="leaveGame()">Leave Game</button>
+            </div>
+
+        <div id="gameArea" style="display: none;">
+            <h2 id="gameTitle">Game Area</h2>
+            
+            <div class="players" id="players">
+                <!-- Player cards will be populated here -->
+            </div>
+
+            <div class="choice-buttons">
+                <button class="choice-btn" onclick="makeMove('rock')" id="rockBtn">🗿 Rock</button>
+                <button class="choice-btn" onclick="makeMove('paper')" id="paperBtn">📄 Paper</button>
+                <button class="choice-btn" onclick="makeMove('scissors')" id="scissorsBtn">✂️ Scissors</button>
+            </div>
+
+            <div id="gameResult" style="display: none;">
+                <!-- Game results will be shown here -->
+            </div>
+        </div>
+
+            <h3>Debug Log:</h3>
+            <div id="log"></div>
+        </div>
+
+        <div id="profileTab" class="tab-content">
+            <h2>Your Profile</h2>
+            <div id="profileInfo" class="stats-panel">
+                <p>Loading profile...</p>
+            </div>
+
+            <h2>Game History</h2>
+            <button onclick="loadHistory()">Refresh History</button>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let playerInfo = null;
+        let gameState = null;
+        let selectedAvatar = '🎮';
+        let availableAvatars = [];
+        let playerProfile = null;
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            if (tabName === 'profile') {
+                loadProfile();
+                loadHistory();
+            }
+        }
+
+        function selectAvatar(avatar) {
+            selectedAvatar = avatar;
+            document.getElementById('selectedAvatar').textContent = avatar;
+            
+            document.querySelectorAll('.avatar-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            if (socket && socket.connected && playerInfo) {
+                socket.emit('update-avatar', { avatar: avatar });
+                log('Avatar updated to ' + avatar);
+            }
+        }
+
+        function renderAvatars(avatars) {
+            const selector = document.getElementById('avatarSelector');
+            selector.innerHTML = '';
+            avatars.forEach(avatar => {
+                const btn = document.createElement('button');
+                btn.className = 'avatar-btn';
+                if (avatar === selectedAvatar) {
+                    btn.classList.add('selected');
+                }
+                btn.textContent = avatar;
+                btn.onclick = () => selectAvatar(avatar);
+                selector.appendChild(btn);
+            });
+        }
+
+        function loadProfile() {
+            if (socket && socket.connected) {
+                socket.emit('get-profile');
+            }
+        }
+
+        function loadHistory() {
+            if (socket && socket.connected) {
+                socket.emit('get-history', { limit: 10 });
+            }
+        }
+
+        function displayProfile(profile) {
+            if (!profile) {
+                document.getElementById('profileInfo').innerHTML = '<p>No profile data available</p>';
+                return;
+            }
+            
+            const html = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 64px;">${profile.avatar}</div>
+                    <h2>${profile.name}</h2>
+                </div>
+                <div class="stat-item">
+                    <span>Games Played:</span>
+                    <span>${profile.stats.gamesPlayed}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Wins:</span>
+                    <span>${profile.stats.wins}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Losses:</span>
+                    <span>${profile.stats.losses}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Ties:</span>
+                    <span>${profile.stats.ties}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Win Rate:</span>
+                    <span>${profile.stats.winRate}%</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total Rounds Won:</span>
+                    <span>${profile.stats.totalRoundsWon}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total Rounds Lost:</span>
+                    <span>${profile.stats.totalRoundsLost}</span>
+                </div>
+            `;
+            document.getElementById('profileInfo').innerHTML = html;
+        }
+
+        function displayHistory(history) {
+            const historyDiv = document.getElementById('historyList');
+            if (!history || history.length === 0) {
+                historyDiv.innerHTML = '<p style="text-align: center;">No game history yet. Play some games!</p>';
+                return;
+            }
+            
+            let html = '';
+            history.forEach(game => {
+                const isPlayer1 = game.player1.id === playerInfo.playerId;
+                const myScore = isPlayer1 ? game.player1.score : game.player2.score;
+                const opponentScore = isPlayer1 ? game.player2.score : game.player1.score;
+                const opponent = isPlayer1 ? game.player2 : game.player1;
+                const result = game.winner === (isPlayer1 ? 'player1' : 'player2') ? 'WON' : 
+                              (game.winner === 'tie' ? 'TIED' : 'LOST');
+                const resultColor = result === 'WON' ? '#4CAF50' : (result === 'TIED' ? '#FFA500' : '#F44336');
+                
+                html += `
+                    <div class="history-item">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 24px; color: ${resultColor}; font-weight: bold;">${result}</span>
+                                vs ${opponent.avatar} ${opponent.name}
+                            </div>
+                            <div style="font-size: 24px; font-weight: bold;">
+                                ${myScore} - ${opponentScore}
+                            </div>
+                        </div>
+                        <div style="font-size: 12px; margin-top: 5px; opacity: 0.7;">
+                            ${new Date(game.finishedAt).toLocaleString()} · Duration: ${game.duration}s
+                        </div>
+                    </div>
+                `;
+            });
+            historyDiv.innerHTML = html;
+        }
+
+        function connectToServer() {
+            socket = io('http://localhost:3001');
+
+            socket.on('connect', () => {
+                log('Connected to server');
+                updateStatus('Connected to server');
+            });
+
+            socket.on('disconnect', () => {
+                log('Disconnected from server');
+                updateStatus('Disconnected from server');
+            });
+
+            socket.on('error', (data) => {
+                log('Error: ' + data.message);
+                updateStatus('Error: ' + data.message);
+            });
+
+            socket.on('joined-lobby', (data) => {
+                playerInfo = data;
+                selectedAvatar = data.avatar || '🎮';
+                document.getElementById('selectedAvatar').textContent = selectedAvatar;
+                log('Joined lobby as: ' + data.playerName + ' ' + selectedAvatar);
+                updateStatus('In lobby as: ' + data.playerName);
+            });
+
+            socket.on('available-avatars', (avatars) => {
+                availableAvatars = avatars;
+                renderAvatars(avatars);
+                log('Loaded ' + avatars.length + ' avatars');
+            });
+
+            socket.on('avatar-updated', (data) => {
+                log('Avatar updated to ' + data.avatar);
+                selectedAvatar = data.avatar;
+                document.getElementById('selectedAvatar').textContent = data.avatar;
+                if (data.profile) {
+                    playerProfile = data.profile;
+                }
+            });
+
+            socket.on('profile-data', (profile) => {
+                playerProfile = profile;
+                displayProfile(profile);
+                log('Profile loaded');
+            });
+
+            socket.on('history-data', (history) => {
+                displayHistory(history);
+                log('History loaded: ' + history.length + ' games');
+            });
+
+            socket.on('game-created', (data) => {
+                gameState = data.gameState;
+                log('Game created: ' + data.gameId);
+                updateStatus('Game created - waiting for opponent');
+                showGameArea();
+                updateGameDisplay();
+            });
+
+            socket.on('game-started', (data) => {
+                gameState = data.gameState;
+                log('Game started!');
+                updateStatus('Game in progress');
+                showGameArea();
+                updateGameDisplay();
+            });
+
+            socket.on('game-update', (data) => {
+                gameState = data.gameState;
+                log('Game updated');
+                updateGameDisplay();
+            });
+
+            socket.on('round-result', (data) => {
+                gameState = data.gameState;
+                log('Round result: ' + data.roundWinner);
+                updateGameDisplay();
+                showRoundResult(data);
+            });
+
+            socket.on('game-finished', (data) => {
+                gameState = data.gameState;
+                log('Game finished! Winner: ' + data.winner);
+                updateStatus('Game finished');
+                showGameResult(data);
+            });
+
+            socket.on('player-disconnected', (data) => {
+                log('Player disconnected: ' + data.message);
+                updateStatus('Player disconnected');
+            });
+        }
+
+        function joinLobby() {
+            const playerName = document.getElementById('playerName').value.trim();
+            if (!playerName) {
+                alert('Please enter your name');
+                return;
+            }
+            if (!socket) connectToServer();
+            socket.emit('join-lobby', { 
+                playerName: playerName,
+                avatar: selectedAvatar 
+            });
+        }
+
+        function createGame() {
+            if (!socket || !playerInfo) {
+                alert('Please join lobby first');
+                return;
+            }
+            socket.emit('create-game', { 
+                playerName: playerInfo.playerName,
+                avatar: selectedAvatar 
+            });
+        }
+
+        function quickJoin() {
+            if (!socket || !playerInfo) {
+                alert('Please join lobby first');
+                return;
+            }
+            socket.emit('quick-join', { 
+                playerName: playerInfo.playerName,
+                avatar: selectedAvatar 
+            });
+        }
+
+        function makeMove(choice) {
+            if (!socket || !gameState) {
+                alert('Game not active');
+                return;
+            }
+            socket.emit('make-move', { choice });
+            disableChoiceButtons();
+            updateStatus('Waiting for opponent...');
+        }
+
+        function leaveGame() {
+            if (socket) {
+                socket.emit('leave-game');
+                hideGameArea();
+                updateStatus('Left game');
+            }
+        }
+
+        function showGameArea() {
+            document.getElementById('gameArea').style.display = 'block';
+        }
+
+        function hideGameArea() {
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameResult').style.display = 'none';
+        }
+
+        function updateGameDisplay() {
+            if (!gameState) return;
+
+            document.getElementById('gameTitle').textContent = 
+                `Round ${gameState.round} of ${gameState.maxRounds}`;
+
+            const playersDiv = document.getElementById('players');
+            playersDiv.innerHTML = '';
+
+            if (gameState.player1) {
+                playersDiv.innerHTML += `
+                    <div class="player-card">
+                        <div style="font-size: 48px;">${gameState.player1.avatar || '🎮'}</div>
+                        <h3>${gameState.player1.name}${playerInfo && gameState.player1.id === playerInfo.playerId ? ' (You)' : ''}</h3>
+                        <div class="score">${gameState.player1.score}</div>
+                        <div>Choice: ${gameState.player1.choice || 'Thinking...'}</div>
+                    </div>
+                `;
+            }
+
+            if (gameState.player2) {
+                playersDiv.innerHTML += `
+                    <div class="player-card">
+                        <div style="font-size: 48px;">${gameState.player2.avatar || '🎮'}</div>
+                        <h3>${gameState.player2.name}${playerInfo && gameState.player2.id === playerInfo.playerId ? ' (You)' : ''}</h3>
+                        <div class="score">${gameState.player2.score}</div>
+                        <div>Choice: ${gameState.player2.choice || 'Thinking...'}</div>
+                    </div>
+                `;
+            }
+
+            // Enable choice buttons if it's player's turn
+            const canMove = gameState.status === 'playing' && 
+                           (!gameState.player1.choice || !gameState.player2.choice);
+            if (canMove) {
+                enableChoiceButtons();
+                updateStatus('Your turn - make a choice!');
+            }
+        }
+
+        function enableChoiceButtons() {
+            document.getElementById('rockBtn').disabled = false;
+            document.getElementById('paperBtn').disabled = false;
+            document.getElementById('scissorsBtn').disabled = false;
+        }
+
+        function disableChoiceButtons() {
+            document.getElementById('rockBtn').disabled = true;
+            document.getElementById('paperBtn').disabled = true;
+            document.getElementById('scissorsBtn').disabled = true;
+        }
+
+        function showRoundResult(data) {
+            const resultDiv = document.getElementById('gameResult');
+            resultDiv.style.display = 'block';
+            
+            let message = '';
+            switch(data.roundWinner) {
+                case 'player1':
+                    message = `${gameState.player1.name} wins this round!`;
+                    break;
+                case 'player2':
+                    message = `${gameState.player2.name} wins this round!`;
+                    break;
+                case 'tie':
+                    message = "It's a tie!";
+                    break;
+            }
+            
+            resultDiv.innerHTML = `<h3>${message}</h3>`;
+        }
+
+        function showGameResult(data) {
+            const resultDiv = document.getElementById('gameResult');
+            resultDiv.style.display = 'block';
+            
+            let message = '';
+            switch(data.winner) {
+                case 'player1':
+                    message = `🏆 ${gameState.player1.name} wins the game!`;
+                    break;
+                case 'player2':
+                    message = `🏆 ${gameState.player2.name} wins the game!`;
+                    break;
+                case 'tie':
+                    message = "🤝 Game ends in a tie!";
+                    break;
+            }
+            
+            resultDiv.innerHTML = `<h2>${message}</h2>`;
+        }
+
+        // Auto-connect when page loads
+        window.onload = function() {
+            log('Page loaded');
+            updateStatus('Ready to connect');
+        };
+    </script>
+</body>
+</html>
